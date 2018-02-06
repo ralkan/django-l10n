@@ -1,8 +1,13 @@
 import os
 import toml
 
+from collections import defaultdict
+
 from django.conf import settings
-from django.utils.translation import get_language
+
+
+_localize_translations = defaultdict(dict)
+_localize_filemtimes = defaultdict(dict)
 
 
 def get_translations(lang_code, domain='global'):
@@ -12,13 +17,12 @@ def get_translations(lang_code, domain='global'):
     lang_translations = _localize_translations[lang_code]
     translations = lang_translations.get(domain)
     if not translations:
-        lang_path = os.path.join(settings.LOCALE_PATHS[0], lang_code)
-        lang_path = os.path.join(lang_path, filename)
+        lang_path = os.path.join(settings.LOCALE_PATHS[0], lang_code, filename)
 
         # Fallback to default file (ie. for English)
         if not os.path.exists(lang_path):
-            lang_path = os.path.join(settings.LOCALE_PATHS[0], 'default')
-            lang_path = os.path.join(lang_path, filename)
+            lang_path = os.path.join(
+                settings.LOCALE_PATHS[0], 'default', filename)
 
         file_path = os.path.abspath(lang_path)
 
@@ -37,6 +41,8 @@ def translate_by_key(lang_code, key, default=None, **kwargs):
     translations = get_translations(lang_code)
 
     # Just return the key if no default is specified
+    if settings.LOCALIZE_DEBUG:
+        default = "{{%s}}" % key
     sent = translations.get(key, default or key)
     plural = kwargs.get('plural')
     if plural is not None:
@@ -50,8 +56,3 @@ def translate_by_key(lang_code, key, default=None, **kwargs):
     for k in kwargs:
         sent = sent.replace(':%s' % k, kwargs[k])
     return sent
-
-
-def localize(key, default=None, **kwargs):
-    lang_code = get_language()
-    return translate_by_key(lang_code, key, default, **kwargs)

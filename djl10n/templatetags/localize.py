@@ -1,7 +1,7 @@
 from django import template
 from django.utils.translation import get_language
 
-from .helpers import translate_by_key
+from ..helpers import translate_by_key
 
 
 register = template.Library()
