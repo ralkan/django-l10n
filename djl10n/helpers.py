@@ -64,7 +64,7 @@ def translate_by_key(lang_code, key, default=None, **kwargs):
     # Just return the key if no default is specified
     if settings.LOCALIZE_DEBUG:
         default = "{{%s}}" % key
-    sent = translations.get(key, default or key)
+    sent = translations.get(key.lower(), default or key)
     plural = kwargs.get('plural')
     if plural is not None:
         del kwargs['plural']
@@ -76,4 +76,11 @@ def translate_by_key(lang_code, key, default=None, **kwargs):
 
     for k in kwargs:
         sent = sent.replace(':%s' % k, kwargs[k])
+
+    if key.isupper():
+        sent = sent.upper()
+    elif key.istitle():
+        sent = sent.title()
+    elif key[:1].isupper():
+        sent = sent[:1].upper() + sent[1:]
     return sent
