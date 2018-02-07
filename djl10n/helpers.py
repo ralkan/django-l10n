@@ -22,7 +22,7 @@ def parse_translations_file(lang_path):
     return translations
 
 
-def get_translations(lang_code, domain='global'):
+def get_translations(lang_code, domain='global', fallback=True):
     global _localize_translations
     global _localize_filemtimes
     global _localize_file_paths
@@ -31,7 +31,7 @@ def get_translations(lang_code, domain='global'):
         filename = '{}.toml'.format(domain)
         lang_path = os.path.join(settings.LOCALE_PATHS[0], lang_code, filename)
         # Fallback to default file (ie. for English)
-        if not os.path.exists(lang_path):
+        if fallback and not os.path.exists(lang_path):
             lang_path = os.path.join(
                 settings.LOCALE_PATHS[0], 'default', filename)
         _localize_file_paths[lang_code][domain] = lang_path
@@ -46,16 +46,31 @@ def get_translations(lang_code, domain='global'):
     if not translations:
         translations = parse_translations_file(lang_path)
         lang_translations[domain] = translations
-        lang_filemtime[domain] = os.path.getmtime(os.path.abspath(lang_path))
+        try:
+            lang_filemtime[domain] = os.path.getmtime(
+                os.path.abspath(lang_path))
+        except OSError:
+            pass
     else:
         _filemtime = lang_filemtime.get(domain)
         if os.path.getmtime(os.path.abspath(lang_path)) > _filemtime:
             translations = parse_translations_file(lang_path)
             lang_translations[domain] = translations
-            lang_filemtime[domain] = os.path.getmtime(
-                os.path.abspath(lang_path))
+            try:
+                lang_filemtime[domain] = os.path.getmtime(
+                    os.path.abspath(lang_path))
+            except OSError:
+                pass
 
     return translations
+
+
+def save_translations(lang_code, translations, domain='global'):
+    filename = '{}.toml'.format(domain)
+    file_path = os.path.abspath(
+        os.path.join(settings.LOCALE_PATHS[0], lang_code, filename))
+    with open(file_path, 'w') as f:
+        toml.dump(translations, f)
 
 
 def translate_by_key(lang_code, key, default=None, **kwargs):
