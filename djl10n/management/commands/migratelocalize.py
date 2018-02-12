@@ -13,7 +13,7 @@ REGEX_PATTERNS = {
     'html': {
         'matcher': r'{% ?(trans[ ]+[\'"]([^{}<>]*?)[\'"]) ?%}',
         'sub': r'trans[ ]+[\'"](.*?)[\'"]',
-        'replace': 'localize \'{}\' \'{}\''
+        'replace': 'localize "{}" "{}"'
     },
     'js': {
         'matcher': r'[{ ,(](gettext\([\'"]([^{}<>]*?)[\'"]\))',
@@ -44,11 +44,27 @@ class Command(BaseCommand):
         global REGEX_PATTERNS
         ext = os.path.splitext(path)[1]
         if ext == '.js':
-            self._search_and_replace(path, maxlen, verbose,
-                                     patterns=REGEX_PATTERNS['js'])
+            has_translation = self._search_and_replace(
+                path, maxlen, verbose, patterns=REGEX_PATTERNS['js'])
         if ext == '.html':
-            self._search_and_replace(path, maxlen, verbose,
-                                     patterns=REGEX_PATTERNS['html'])
+            has_translation = self._search_and_replace(
+                path, maxlen, verbose, patterns=REGEX_PATTERNS['html'])
+            if has_translation:
+                self._load_localize_template_tag(path)
+
+    def _load_localize_template_tag(self, path):
+        add_tag = False
+        with open(path, 'r') as f:
+            contents = f.read()
+            templatetags = re.findall(r'{% load (\w+) %}', contents)
+            if 'localize' not in templatetags:
+                add_tag = True
+                with open('{}.new'.format(path), 'w') as fnew:
+                    contents = '{% load localize %}\n' + contents
+                    fnew.write(contents)
+        if add_tag:
+            os.remove(path)
+            os.rename('{}.new'.format(path), path)
 
     def _search_and_replace(self, path, maxlen, verbose, patterns):
         has_translation = False
@@ -95,6 +111,7 @@ class Command(BaseCommand):
         else:
             os.remove(path)
             os.rename('{}.new'.format(path), path)
+        return has_translation
 
     def handle(self, *args, **options):
         transfile_path = options['transfile']
