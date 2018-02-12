@@ -9,6 +9,20 @@ from unidecode import unidecode
 from django.core.management import BaseCommand
 
 
+REGEX_PATTERNS = {
+    'html': {
+        'matcher': r'{% ?(trans[ ]+[\'"]([^{}<>]*?)[\'"]) ?%}',
+        'sub': r'trans[ ]+[\'"](.*?)[\'"]',
+        'replace': 'localize \'{}\' \'{}\''
+    },
+    'js': {
+        'matcher': r'[{ ,(](gettext\([\'"]([^{}<>]*?)[\'"]\))',
+        'sub': r'gettext\([\'"](.*?)[\'"]\)',
+        'replace': 'localize(\'{}\', \'{}\')'
+    },
+}
+
+
 class Command(BaseCommand):
     translations = {}
     inv_translations = {}
@@ -27,13 +41,23 @@ class Command(BaseCommand):
     )
 
     def search_and_replace(self, path, maxlen, verbose=False):
-        has_gettext = False
+        global REGEX_PATTERNS
+        ext = os.path.splitext(path)[1]
+        if ext == '.js':
+            self._search_and_replace(path, maxlen, verbose,
+                                     patterns=REGEX_PATTERNS['js'])
+        if ext == '.html':
+            self._search_and_replace(path, maxlen, verbose,
+                                     patterns=REGEX_PATTERNS['html'])
+
+    def _search_and_replace(self, path, maxlen, verbose, patterns):
+        has_translation = False
         with open(path, 'r') as f, open('{}.new'.format(path), 'w') as fnew:
-            m = re.compile(r'[{ ,(](gettext\([\'"]([^{}<>]*?)[\'"]\))')
+            m = re.compile(patterns['matcher'])
             for line in f.readlines():
                 matches = m.findall(line)
                 if len(matches) > 0:
-                    has_gettext = True
+                    has_translation = True
                     replaced_line = line
                     for match in matches:
                         actual = match[0]
@@ -56,8 +80,8 @@ class Command(BaseCommand):
                                 self.translations[key] = val
 
                         replaced = re.sub(
-                            r'gettext\([\'"](.*?)[\'"]\)',
-                            'localize(\'{}\', \'{}\')'.format(
+                            patterns['sub'],
+                            patterns['replace'].format(
                                 key, val.replace("'", "\\'")), actual)
                         replaced_line = replaced_line.replace(actual, replaced)
                     if verbose and line != replaced_line:
@@ -66,7 +90,7 @@ class Command(BaseCommand):
                     fnew.write(replaced_line)
                 else:
                     fnew.write(line)
-        if not has_gettext:
+        if not has_translation:
             os.remove('{}.new'.format(path))
         else:
             os.remove(path)
