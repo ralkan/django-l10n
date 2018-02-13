@@ -9,16 +9,18 @@ from unidecode import unidecode
 from django.core.management import BaseCommand
 
 
-REGEX_PATTERNS = {
+PATTERNS = {
     'html': {
         'matcher': r'{% ?(trans[ ]+[\'"]([^{}<>]*?)[\'"]) ?%}',
-        'sub': r'trans[ ]+[\'"](.*?)[\'"]',
-        'replace': 'localize "{}" "{}"'
+        'sub': r'^trans[ ]+[\'"](.*?)[\'"]$',
+        'replace': 'localize "{}" "{}"',
+        'process_val': lambda val: val.replace('"', '\\"')
     },
     'js': {
         'matcher': r'[{ ,(](gettext\([\'"]([^{}<>]*?)[\'"]\))',
         'sub': r'gettext\([\'"](.*?)[\'"]\)',
-        'replace': 'localize(\'{}\', \'{}\')'
+        'replace': 'localize(\'{}\', \'{}\')',
+        'process_val': lambda val: val.replace("'", "\\'")
     },
 }
 
@@ -41,14 +43,14 @@ class Command(BaseCommand):
     )
 
     def search_and_replace(self, path, maxlen, verbose=False):
-        global REGEX_PATTERNS
+        global PATTERNS
         ext = os.path.splitext(path)[1]
         if ext == '.js':
             has_translation = self._search_and_replace(
-                path, maxlen, verbose, patterns=REGEX_PATTERNS['js'])
+                path, maxlen, verbose, patterns=PATTERNS['js'])
         if ext == '.html':
             has_translation = self._search_and_replace(
-                path, maxlen, verbose, patterns=REGEX_PATTERNS['html'])
+                path, maxlen, verbose, patterns=PATTERNS['html'])
             if has_translation:
                 self._load_localize_template_tag(path)
 
@@ -118,7 +120,7 @@ class Command(BaseCommand):
                         replaced = re.sub(
                             patterns['sub'],
                             patterns['replace'].format(
-                                key, val.replace("'", "\\'")), actual)
+                                key, patterns['process_val'](val)), actual)
                         replaced_line = replaced_line.replace(actual, replaced)
                     if verbose and line != replaced_line:
                         sys.stdout.write(line.replace('\n', '').strip() + '\n')
