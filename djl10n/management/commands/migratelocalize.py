@@ -53,15 +53,35 @@ class Command(BaseCommand):
                 self._load_localize_template_tag(path)
 
     def _load_localize_template_tag(self, path):
+        re_tt_extends = re.compile(r'{% extends [\'"](.*)[\'"] %}')
         add_tag = False
         with open(path, 'r') as f:
             contents = f.read()
             templatetags = re.findall(r'{% load (\w+) %}', contents)
             if 'localize' not in templatetags:
-                add_tag = True
                 with open('{}.new'.format(path), 'w') as fnew:
-                    contents = '{% load localize %}\n' + contents
-                    fnew.write(contents)
+                    has_extends = False
+                    if re_tt_extends.search(contents):
+                        has_extends = True
+
+                    lines = contents.splitlines()
+                    linecount = len(lines)
+                    new_lines = []
+
+                    for ind in xrange(linecount):
+                        line = lines[ind]
+                        if not add_tag:
+                            if has_extends:
+                                if (line != '' and
+                                        not re_tt_extends.search(line)):
+                                    new_lines.append('{% load localize %}')
+                                    add_tag = True
+                            else:
+                                new_lines.append('{% load localize %}')
+                                add_tag = True
+                        new_lines.append(line)
+                    new_contents = '\n'.join(new_lines)
+                    fnew.write(new_contents)
         if add_tag:
             os.remove(path)
             os.rename('{}.new'.format(path), path)
