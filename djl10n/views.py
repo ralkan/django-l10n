@@ -29,8 +29,9 @@ js_catalog_template = r"""
     }
     if (placeholders && placeholders['plural']) {
       var plural = parseInt(placeholders['plural']);
+      var values = value.split('|');
       delete placeholders['plural'];
-      if (plural == 1) {
+      if (plural == 1 || values.length < 2) {
         value = value.split('|')[0];
       } else {
         value = value.split('|')[1];
