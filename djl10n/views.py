@@ -10,6 +10,27 @@ from .helpers import get_translations
 js_catalog_template = r"""
 {% autoescape off %}
 (function (globals) {
+  String.prototype.toTitleCase = function() {
+    return this.replace(
+      /([^\W_]+[^\s-_]*) */g,
+      function(txt){
+        return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+      });
+  }
+  String.prototype.toUpperCaseFirstChar = function() {
+    return this.substr(0, 1).toUpperCase() + this.substr(1);
+  };
+
+  String.prototype.isUpperCase = function() {
+    return this == this.toUpperCase();
+  };
+  String.prototype.isTitleCase = function() {
+    return this == this.toTitleCase();
+  };
+  String.prototype.isUpperCaseFirstChar = function() {
+    return this == this.toUpperCaseFirstChar();
+  };
+
 
   var django = globals.django || (globals.django = {});
 
@@ -19,7 +40,7 @@ js_catalog_template = r"""
 
   django.localize = function (key, fallback, placeholders) {
     fallback = typeof(fallback) == "undefined" ? key : fallback;
-    var value = django.translations[key];
+    var value = django.translations[key.toLowerCase()];
     if (typeof(value) == 'undefined') {
       {% if not debug %}
       value = fallback;
@@ -40,6 +61,15 @@ js_catalog_template = r"""
     for (var ph in placeholders) {
       value = value.replace(':' + ph, placeholders[ph]);
     }
+
+    if (key.isUpperCase()) {
+      value = value.toUpperCase();
+    } else if (key.isTitleCase()) {
+      value = value.toTitleCase();
+    } else if (key.isUpperCaseFirstChar()) {
+      value = value.toUpperCaseFirstChar();
+    }
+
     return value;
   };
 
