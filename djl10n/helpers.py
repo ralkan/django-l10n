@@ -67,8 +67,12 @@ def get_translations(lang_code, domain='global', fallback=True):
 
 def save_translations(lang_code, translations, domain='global'):
     filename = '{}.toml'.format(domain)
-    file_path = os.path.abspath(
-        os.path.join(settings.LOCALE_PATHS[0], lang_code, filename))
+    locale_path = os.path.join(settings.LOCALE_PATHS[0], lang_code)
+
+    if not os.path.isdir(os.path.abspath(locale_path)):
+        os.makedirs(locale_path)
+
+    file_path = os.path.abspath(os.path.join(locale_path, filename))
     with open(file_path, 'w') as f:
         toml.dump(translations, f)
 
