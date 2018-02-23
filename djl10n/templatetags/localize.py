@@ -14,7 +14,9 @@ def localize(context, key, default=None, **kwargs):
     tmp_kwargs = {}
     for k, v in kwargs.iteritems():
         tmp_v = v
-        matches = re.findall(r'({{[ ]*([\w\.]+)[ ]*}})', tmp_v)
+        matches = []
+        if k != 'plural':
+            matches = re.findall(r'({{[ ]*([\w\.]+)[ ]*}})', unicode(tmp_v))
         for m in matches:
             if '.' in m[1]:
                 _parts = m[1].split('.')

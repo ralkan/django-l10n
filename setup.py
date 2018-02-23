@@ -4,7 +4,7 @@
 import os
 from setuptools import setup, find_packages
 
-VERSION = (0, 0, 3)
+VERSION = (0, 0, 4)
 __version__ = '.'.join(map(str, VERSION))
 
 README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
