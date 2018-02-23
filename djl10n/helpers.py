@@ -94,7 +94,7 @@ def translate_by_key(lang_code, key, default=None, **kwargs):
             sent = sents[1]
 
     for k in kwargs:
-        sent = sent.replace(':%s' % k, kwargs[k])
+        sent = sent.replace(':%s' % k, unicode(kwargs[k]))
 
     if key.isupper():
         sent = sent.upper()
