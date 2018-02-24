@@ -102,4 +102,4 @@ def translate_by_key(lang_code, key, default=None, **kwargs):
         sent = sent.title()
     elif key[:1].isupper():
         sent = sent[:1].upper() + sent[1:]
-    return sent
+    return unicode(sent)
