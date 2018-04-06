@@ -88,7 +88,9 @@ def translate_by_key(lang_code, key, default=None, **kwargs):
     if plural is not None:
         del kwargs['plural']
         sents = sent.split('|')
-        if plural == 1:
+        if not ('|' in sent):
+            sent = sents[0]
+        elif plural == 1:
             sent = sents[0]
         else:
             sent = sents[1]
