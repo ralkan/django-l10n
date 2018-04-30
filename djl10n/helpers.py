@@ -84,14 +84,14 @@ def translate_by_key(lang_code, key, default=None, **kwargs):
     if settings.LOCALIZE_DEBUG:
         default = "{{%s}}" % key
     sent = translations.get(key.lower(), default or key)
-    plural = kwargs.get('plural')
+    plural = kwargs.pop('plural', None)
     if plural is not None:
-        del kwargs['plural']
         sents = sent.split('|')
-        if plural == 1:
-            sent = sents[0]
-        else:
-            sent = sents[1]
+        if len(sents) > 1:
+            if plural == 1:
+                sent = sents[0]
+            else:
+                sent = sents[1]
 
     for k in kwargs:
         sent = sent.replace(':%s' % k, unicode(kwargs[k]))
