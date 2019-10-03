@@ -28,7 +28,7 @@ setup(
     keywords='django,l10n,i18n,django language,django localization',
     packages=packages,
     install_requires=[
-        'Django==1.7.10',
+        'Django==1.11.23',
         'toml==0.9.4'
     ]
 )
